@@ -1,17 +1,15 @@
 package com.mizookie.packagemapper.controllers;
 
+import com.mizookie.packagemapper.services.AnalyserService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import java.util.Map;
-
-import com.mizookie.packagemapper.services.AnalyserService;
-
-import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -26,10 +24,11 @@ public class AnalyserController {
 
     /**
      * This method receives a repository path and triggers the analysis of the code in the repository.
+     *
      * @param requestBody The request body containing the repository path.
      */
     @PostMapping("/custom")
-    public void analyse(@RequestBody Map<String, String> requestBody) {
+    public void analyse(@RequestBody Map<String, String> requestBody) throws IOException {
         String repositoryPath = requestBody.get("repositoryPath");
         log.info("Repository path received: {}", repositoryPath);
         analyserService.analyse(repositoryPath);
