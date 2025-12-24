@@ -1,18 +1,16 @@
 package com.mizookie.packagemapper.controllers.github;
 
-import java.util.Map;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.mizookie.packagemapper.dto.user.GithubRepositoryInfoRequest;
 import com.mizookie.packagemapper.services.GithubRepositoryService;
-
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This class is a controller for handling requests related to GitHub repositories.
@@ -22,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/repository")
 public class GithubRepositoryController {
 
+    private static final String MESSAGE_KEY = "message";
     private final GithubRepositoryService githubRepositoryService;
 
     @Autowired
@@ -29,10 +28,9 @@ public class GithubRepositoryController {
         this.githubRepositoryService = githubRepositoryService;
     }
 
-    private static final String MESSAGE_KEY = "message";
-
     /**
      * This method downloads a public GitHub repository to the local file system.
+     *
      * @param requestBody The request body containing the URL of the repository to download.
      * @return A response entity containing a message indicating the result of the download operation.
      */
@@ -51,7 +49,7 @@ public class GithubRepositoryController {
 
     /**
      * This method deletes a GitHub repository.
-     * @param requestBody The request body containing the URL of the repository to delete.
+     *
      * @return A response entity containing a message indicating the result of the delete operation.
      */
     @PostMapping("/delete")
@@ -64,5 +62,15 @@ public class GithubRepositoryController {
             log.error(e.getMessage(), e);
             return ResponseEntity.badRequest().body(Map.of(MESSAGE_KEY, e.getMessage()));
         }
-    } 
+    }
+
+    @GetMapping("/branches")
+    List<String> getRepoBranches(@RequestParam String repoName, @RequestParam(required = false) String version) throws GitAPIException, IOException, InterruptedException {
+        return githubRepositoryService.getRepoCommitVersions(repoName, version, Integer.MAX_VALUE);
+    }
+
+    @PutMapping("/fetch")
+    void fetchRepository(@RequestParam String repoName) throws GitAPIException, IOException {
+        githubRepositoryService.fetchAll(repoName);
+    }
 }

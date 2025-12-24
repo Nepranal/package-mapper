@@ -1,5 +1,6 @@
 package com.mizookie.packagemapper.services.implementations;
 
+import com.mizookie.packagemapper.services.GithubRepositoryService;
 import com.mizookie.packagemapper.services.GraphService;
 import com.mxgraph.layout.mxCircleLayout;
 import com.mxgraph.util.mxCellRenderer;
@@ -10,15 +11,15 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.nio.Attribute;
 import org.jgrapht.nio.DefaultAttribute;
 import org.jgrapht.nio.dot.DOTExporter;
+import org.jgrapht.nio.dot.DOTImporter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.List;
 import java.util.*;
 
@@ -31,10 +32,12 @@ public class GraphServiceImpl implements GraphService {
     @Value("${analysis.directory}")
     private String analysisDirectory;
 
+    @Autowired
     // Constructor to initialize the graph
-    public GraphServiceImpl() {
+    public GraphServiceImpl(GithubRepositoryService githubService) {
         // Initialize a directed graph
         this.dependencyGraph = new DefaultDirectedGraph<>(DefaultEdge.class);
+
     }
 
     public static Graph<String, DefaultEdge> createLargeGraph() {
@@ -157,13 +160,20 @@ public class GraphServiceImpl implements GraphService {
         }
     }
 
-    public void serializeGraph(String repositoryName) throws IOException {
+    public void serializeGraph(String repositoryName, String version) throws IOException {
         DOTExporter<String, DefaultEdge> exporter = new DOTExporter<>();
         exporter.setVertexAttributeProvider((v) -> {
             Map<String, Attribute> map = new LinkedHashMap<>();
             map.put("label", DefaultAttribute.createAttribute(v));
             return map;
         });
-        exporter.exportGraph(dependencyGraph, new FileWriter(String.format("%s/%s.gv", analysisDirectory, repositoryName)));
+        exporter.exportGraph(dependencyGraph, new FileWriter(String.format("%s/%s_%s.gv", analysisDirectory, repositoryName, version)));
+    }
+
+    public Graph<String, DefaultEdge> importGraph(String repositoryName) throws FileNotFoundException {
+        DOTImporter<String, DefaultEdge> importer = new DOTImporter<>();
+        importer.setVertexWithAttributesFactory((k, l) -> String.valueOf(l.get("label")));
+        importer.importGraph(dependencyGraph, new FileReader(String.format("%s/%s.gv", analysisDirectory, repositoryName)));
+        return dependencyGraph;
     }
 }

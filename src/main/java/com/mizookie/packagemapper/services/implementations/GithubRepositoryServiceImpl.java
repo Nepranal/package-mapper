@@ -1,20 +1,22 @@
 package com.mizookie.packagemapper.services.implementations;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.GitAPIException;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
-
 import com.mizookie.packagemapper.services.GithubRepositoryService;
 import com.mizookie.packagemapper.utils.FileService;
+import lombok.extern.slf4j.Slf4j;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implementation of the GithubRepositoryService interface that provides methods
@@ -25,16 +27,16 @@ import java.nio.file.Paths;
 @Component
 public class GithubRepositoryServiceImpl implements GithubRepositoryService {
 
+    private final FileRepositoryBuilder builder = new FileRepositoryBuilder();
     @Value("${repository.directory}")
     private String localRepositoryDirectory;
-
     // Absolute path to the user's repository directory (local)
     private String userRepositoryDirectory;
-
     private Git git;
 
     /**
      * Downloads a public GitHub repository to the local file system.
+     *
      * @param repositoryUrlString The URL of the repository to download.
      * @return A message indicating the result of the download operation.
      */
@@ -65,8 +67,9 @@ public class GithubRepositoryServiceImpl implements GithubRepositoryService {
 
     /**
      * Downloads a private GitHub repository to the local file system.
+     *
      * @param repositoryUrlString The URL of the repository to download.
-     * @param token The access token for the private repository.
+     * @param token               The access token for the private repository.
      */
     @Override
     public void downloadPrivateRepository(String repositoryUrlString, String token) {
@@ -75,6 +78,7 @@ public class GithubRepositoryServiceImpl implements GithubRepositoryService {
 
     /**
      * Deletes a GitHub repository from the local file system.
+     *
      * @return A message indicating the result of the delete operation.
      */
     @Override
@@ -108,6 +112,45 @@ public class GithubRepositoryServiceImpl implements GithubRepositoryService {
         } else {
             return "Repository directory not found!";
         }
+    }
+
+    public void fetchAll(String repositoryName) throws IOException, GitAPIException {
+        Git git = new Git(builder.setGitDir(new File(String.format("%s/%s/.git", localRepositoryDirectory, repositoryName)))
+                .readEnvironment()
+                .findGitDir()
+                .build());
+        git.remoteList().call().forEach(remote -> {
+            try {
+                git.fetch().setRemote(remote.getName()).setRefSpecs(remote.getFetchRefSpecs()).call();
+            } catch (GitAPIException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    // TODO: Make a version that is pageable
+    public List<String> getRepoCommitVersions(String repositoryName, String version, int limit) throws GitAPIException, IOException {
+        Git git = new Git(builder.setGitDir(new File(String.format("%s/%s/.git", localRepositoryDirectory, repositoryName)))
+                .readEnvironment()
+                .findGitDir()
+                .build());
+
+        if (version != null) {
+            git.checkout().setName(version).call();
+        }
+
+        ArrayList<String> commits = new ArrayList<>();
+        git.log().setMaxCount(limit).call().iterator().forEachRemaining(revCommit -> commits.add(revCommit.getName()));
+        return commits;
+    }
+
+    // commit id based on the current HEAD.
+    public String getCurrentCommit(String repositoryName) throws GitAPIException, IOException {
+        return getRepoCommitVersions(repositoryName, null, 1).get(0);
+    }
+
+    public void checkoutCommit(String repositoryName, String version) throws IOException, GitAPIException {
+        getRepoCommitVersions(repositoryName, version, 0);
     }
 
     // Helper method to extract the repository name from the URL

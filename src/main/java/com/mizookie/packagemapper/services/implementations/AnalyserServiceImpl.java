@@ -1,9 +1,11 @@
 package com.mizookie.packagemapper.services.implementations;
 
 import com.mizookie.packagemapper.services.AnalyserService;
+import com.mizookie.packagemapper.services.GithubRepositoryService;
 import com.mizookie.packagemapper.services.GraphService;
 import com.mizookie.packagemapper.utils.FileService;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,15 +23,16 @@ import java.util.Map;
 @Slf4j
 public class AnalyserServiceImpl implements AnalyserService {
 
+    private final GraphService graphService;
+    private final GithubRepositoryService githubRepositoryService;
     @Value("${repository.directory}")
     private String localRepositoryDirectory;
-
-    private GraphService graphService;
     private Map<String, List<String>> classesMap = new HashMap<>();
 
     @Autowired
-    public AnalyserServiceImpl(GraphService graphService) {
+    public AnalyserServiceImpl(GraphService graphService, GithubRepositoryService githubRepositoryService) {
         this.graphService = graphService;
+        this.githubRepositoryService = githubRepositoryService;
     }
 
     /**
@@ -53,9 +56,15 @@ public class AnalyserServiceImpl implements AnalyserService {
      * @param repositoryPath The path to the repository to analyze.
      */
     @Override
-    public void analyse(String repositoryPath) throws IOException {
+    public void analyse(String repositoryPath, String version) throws IOException, GitAPIException, InterruptedException {
         List<String> repoFiles = FileService.getFiles(repositoryPath);
+        String repositoryName = FileService.getFileNameOnly(repositoryPath);
         int N = repoFiles.size();
+
+        if (version == null) {
+            version = githubRepositoryService.getCurrentCommit(repositoryName);
+        }
+        githubRepositoryService.checkoutCommit(repositoryName, version);
 
         graphService.setDependencyMap(classesMap);
         for (int i = 0; i < N - 1; ++i) {
@@ -70,14 +79,14 @@ public class AnalyserServiceImpl implements AnalyserService {
                 }
             }
         }
-        graphService.serializeGraph(FileService.getFileNameOnly(repositoryPath));
+        graphService.serializeGraph(repositoryName, version);
     }
 
     /**
      * This method analyzes all repositories.
      */
     @Override
-    public void analyse() throws IOException {
+    public void analyse() throws IOException, GitAPIException, InterruptedException {
         // Analyze all local repositories
         log.info("Analyzing all local repositories...");
 
@@ -85,7 +94,7 @@ public class AnalyserServiceImpl implements AnalyserService {
         List<String> repositories = FileService.getDirectories(localRepositoryDirectory);
 
         for (String repository : repositories) {
-            analyse(repository);
+            analyse(repository, null); // TODO: This function should take a collection of version
         }
     }
 

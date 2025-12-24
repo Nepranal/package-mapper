@@ -5,6 +5,7 @@ import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultEdge;
 import org.springframework.stereotype.Service;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -28,5 +29,7 @@ public interface GraphService {
 
     Set<DefaultEdge> getOutgoingEdges(String vertex);
 
-    void serializeGraph(String s) throws IOException;
+    void serializeGraph(String s, String v) throws IOException;
+
+    Graph<String, DefaultEdge> importGraph(String repositoryName) throws FileNotFoundException;
 }
