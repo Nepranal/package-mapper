@@ -104,7 +104,7 @@ public class GraphServiceImpl implements GraphService {
     @Override
     public void setDependencyMap(Map<String, List<String>> classesMap) {
         // Clear the existing graph
-        dependencyGraph.removeAllVertices(dependencyGraph.vertexSet());
+        this.dependencyGraph = new DefaultDirectedGraph<>(DefaultEdge.class);
         // Create a copy of the classesMap
         Map<String, List<String>> classesCopy = new HashMap<>(classesMap);
 
@@ -170,10 +170,10 @@ public class GraphServiceImpl implements GraphService {
         exporter.exportGraph(dependencyGraph, new FileWriter(String.format("%s/%s_%s.gv", analysisDirectory, repositoryName, version)));
     }
 
-    public Graph<String, DefaultEdge> importGraph(String repositoryName) throws FileNotFoundException {
+    public Graph<String, DefaultEdge> importGraph(String fileName) throws FileNotFoundException {
         DOTImporter<String, DefaultEdge> importer = new DOTImporter<>();
         importer.setVertexWithAttributesFactory((k, l) -> String.valueOf(l.get("label")));
-        importer.importGraph(dependencyGraph, new FileReader(String.format("%s/%s.gv", analysisDirectory, repositoryName)));
+        importer.importGraph(dependencyGraph, new FileReader(String.format("%s/%s.gv", analysisDirectory, fileName)));
         return dependencyGraph;
     }
 }

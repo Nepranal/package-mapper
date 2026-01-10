@@ -24,4 +24,8 @@ public interface GithubRepositoryService {
     void checkoutCommit(String repositoryName, String version) throws IOException, GitAPIException;
 
     void fetchAll(String repositoryName) throws IOException, GitAPIException;
+
+    public List<String> getAllRepo();
+
+    List<String> getLogAll(String repositoryName) throws GitAPIException, IOException;
 }

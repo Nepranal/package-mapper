@@ -1,14 +1,14 @@
 package com.mizookie.packagemapper.utils;
 
-import java.util.*;
-
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
-import java.nio.file.Paths;
-import java.nio.file.Files;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @UtilityClass
@@ -59,6 +59,18 @@ public class FileService {
         }
         return files;
     }
+
+    public List<String> getCurrentDirectory(String directoryPath) {
+        ArrayList<String> directories = new ArrayList<>();
+        File folder = new File(directoryPath);
+        for (File file : folder.listFiles()) {
+            if (file.isDirectory()) {
+                directories.add(file.getName());
+            }
+        }
+        return directories;
+    }
+
 
     // Get all directories in a directory (excluding subdirectories)
     public List<String> getDirectories(String directoryPath) {

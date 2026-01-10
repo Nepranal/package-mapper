@@ -31,5 +31,5 @@ public interface GraphService {
 
     void serializeGraph(String s, String v) throws IOException;
 
-    Graph<String, DefaultEdge> importGraph(String repositoryName) throws FileNotFoundException;
+    Graph<String, DefaultEdge> importGraph(String fileName) throws FileNotFoundException;
 }

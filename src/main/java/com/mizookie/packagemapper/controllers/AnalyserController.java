@@ -1,23 +1,36 @@
 package com.mizookie.packagemapper.controllers;
 
+import com.mizookie.packagemapper.dto.user.DependencyGraphResponse;
 import com.mizookie.packagemapper.services.AnalyserService;
+import com.mizookie.packagemapper.services.GraphService;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultEdge;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
 @RestController
+@CrossOrigin()
 @RequestMapping("/analyse")
 public class AnalyserController {
     private final AnalyserService analyserService;
+    private final GraphService graphService;
+    @Value("${repository.directory}")
+    private String localRepositoryDirectory;
 
     @Autowired
-    public AnalyserController(AnalyserService analyserService) {
+    public AnalyserController(AnalyserService analyserService, GraphService graphService) {
         this.analyserService = analyserService;
+        this.graphService = graphService;
     }
 
     /**
@@ -55,8 +68,22 @@ public class AnalyserController {
         analyserService.visualizeDemo();
     }
 
-    @GetMapping("/visualize")
-    public void generateGraph(@RequestParam String repoName) {
-
+    @GetMapping("/graph")
+    public List<DependencyGraphResponse> generateGraph(@RequestParam String repo, @RequestParam String version) throws GitAPIException, IOException, InterruptedException {
+        ArrayList<DependencyGraphResponse> responses = new ArrayList<>();
+        Graph<String, DefaultEdge> graph;
+        try {
+            graph = graphService.importGraph(String.format("%s_%s", repo, version));
+        } catch (FileNotFoundException e) {
+            System.out.println("hi");
+            analyserService.analyse(String.format("%s/%s", localRepositoryDirectory, repo), version);
+            System.out.println("hello");
+            graph = graphService.importGraph(String.format("%s_%s", repo, version));
+        }
+        Graph<String, DefaultEdge> finalGraph = graph;
+        finalGraph.edgeSet().forEach(e -> {
+            responses.add(new DependencyGraphResponse(finalGraph.getEdgeSource(e), finalGraph.getEdgeTarget(e)));
+        });
+        return responses;
     }
 }

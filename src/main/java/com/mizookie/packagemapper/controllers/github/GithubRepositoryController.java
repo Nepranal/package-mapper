@@ -17,6 +17,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
+@CrossOrigin()
 @RequestMapping("/repository")
 public class GithubRepositoryController {
 
@@ -65,12 +66,23 @@ public class GithubRepositoryController {
     }
 
     @GetMapping("/branches")
-    List<String> getRepoBranches(@RequestParam String repoName, @RequestParam(required = false) String version) throws GitAPIException, IOException, InterruptedException {
-        return githubRepositoryService.getRepoCommitVersions(repoName, version, Integer.MAX_VALUE);
+    List<String> getRepoBranches(@RequestParam String repo, @RequestParam(required = false) String version) throws GitAPIException, IOException {
+        return githubRepositoryService.getRepoCommitVersions(repo, version, Integer.MAX_VALUE);
     }
 
     @PutMapping("/fetch")
-    void fetchRepository(@RequestParam String repoName) throws GitAPIException, IOException {
-        githubRepositoryService.fetchAll(repoName);
+    List<String> fetchRepository(@RequestParam String repo) throws GitAPIException, IOException {
+        githubRepositoryService.fetchAll(repo);
+        return githubRepositoryService.getLogAll(repo);
+    }
+
+    @GetMapping("/all")
+    List<String> getAllRepositoryNames() {
+        return githubRepositoryService.getAllRepo();
+    }
+
+    @GetMapping("/log")
+    List<String> getRepositoryLogAll(@RequestParam String repo) throws GitAPIException, IOException {
+        return githubRepositoryService.getLogAll(repo);
     }
 }

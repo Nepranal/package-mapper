@@ -4,6 +4,7 @@ import com.mizookie.packagemapper.services.GithubRepositoryService;
 import com.mizookie.packagemapper.utils.FileService;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.LogCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.springframework.beans.factory.annotation.Value;
@@ -129,7 +130,7 @@ public class GithubRepositoryServiceImpl implements GithubRepositoryService {
     }
 
     // TODO: Make a version that is pageable
-    public List<String> getRepoCommitVersions(String repositoryName, String version, int limit) throws GitAPIException, IOException {
+    public List<String> getRepoCommitVersions(String repositoryName, String version, int limit, boolean all) throws GitAPIException, IOException {
         Git git = new Git(builder.setGitDir(new File(String.format("%s/%s/.git", localRepositoryDirectory, repositoryName)))
                 .readEnvironment()
                 .findGitDir()
@@ -140,8 +141,20 @@ public class GithubRepositoryServiceImpl implements GithubRepositoryService {
         }
 
         ArrayList<String> commits = new ArrayList<>();
-        git.log().setMaxCount(limit).call().iterator().forEachRemaining(revCommit -> commits.add(revCommit.getName()));
+        LogCommand cmd = git.log().setMaxCount(limit);
+        if (all) {
+            cmd = cmd.all();
+        }
+        cmd.call().iterator().forEachRemaining(revCommit -> commits.add(revCommit.getName()));
         return commits;
+    }
+
+    public List<String> getLogAll(String repositoryName) throws GitAPIException, IOException {
+        return getRepoCommitVersions(repositoryName, null, Integer.MAX_VALUE, true);
+    }
+
+    public List<String> getRepoCommitVersions(String repositoryName, String version, int limit) throws GitAPIException, IOException {
+        return getRepoCommitVersions(repositoryName, version, limit, false);
     }
 
     // commit id based on the current HEAD.
@@ -156,5 +169,9 @@ public class GithubRepositoryServiceImpl implements GithubRepositoryService {
     // Helper method to extract the repository name from the URL
     private String getRepositoryName(String repositoryUrlString) {
         return FileService.getFileNameWithoutExtension(repositoryUrlString);
+    }
+
+    public List<String> getAllRepo() {
+        return FileService.getCurrentDirectory(localRepositoryDirectory);
     }
 }

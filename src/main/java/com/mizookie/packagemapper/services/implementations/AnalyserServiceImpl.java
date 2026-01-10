@@ -65,17 +65,21 @@ public class AnalyserServiceImpl implements AnalyserService {
             version = githubRepositoryService.getCurrentCommit(repositoryName);
         }
         githubRepositoryService.checkoutCommit(repositoryName, version);
+        System.out.println("checked out");
 
         graphService.setDependencyMap(classesMap);
         for (int i = 0; i < N - 1; ++i) {
             for (int j = i + 1; j < N; ++j) {
                 String path1 = repoFiles.get(i);
                 String path2 = repoFiles.get(j);
+                String relativePath1 = path1.replaceFirst(localRepositoryDirectory, "").replaceFirst("^/,*", "");
+                String relativePath2 = path2.replaceFirst(localRepositoryDirectory, "").replaceFirst("^/,*", "");
+
                 if (findInCrawl(path1, new String[]{FileService.getFileNameWithoutExtension(path2)})) {
-                    graphService.addEdge(path1, path2);
+                    graphService.addEdge(relativePath1, relativePath2);
                 }
                 if (findInCrawl(path2, new String[]{FileService.getFileNameWithoutExtension(path1)})) {
-                    graphService.addEdge(path2, path1);
+                    graphService.addEdge(relativePath2, relativePath1);
                 }
             }
         }
