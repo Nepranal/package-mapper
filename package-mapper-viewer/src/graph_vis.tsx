@@ -13,14 +13,17 @@ interface Node extends d3.SimulationNodeDatum {
 }
 
 export default function GraphVis({ types, nodes, links }: GraphVisProps) {
-  const ref = useRef(null);
   const [width, setWidth] = useState(window.innerWidth);
   const [height, setHeight] = useState(window.innerHeight);
   const [minWidth, setMinWidth] = useState(-width / 2);
   const [minHeight, setMinHeight] = useState(-height / 2);
+  const [color, setColor] = useState(() =>
+    d3.scaleOrdinal(types, d3.schemeCategory10)
+  );
+
+  const mouseDown = useRef(false);
 
   useEffect(() => {
-    const color = d3.scaleOrdinal(types, d3.schemeCategory10);
     const simulation = d3
       .forceSimulation(nodes)
       .force(
@@ -31,119 +34,124 @@ export default function GraphVis({ types, nodes, links }: GraphVisProps) {
       .force("x", d3.forceX())
       .force("y", d3.forceY());
 
-    const svg = d3.select(ref.current);
-    if (svg.selectAll("g").empty()) {
-      svg
-        .append("defs")
-        .selectAll("marker")
-        .data(types)
-        .join("marker")
-        .attr("id", (d) => `arrow-${d}`)
-        .attr("viewBox", "0 -5 10 10")
-        .attr("refX", 15)
-        .attr("refY", -0.5)
-        .attr("markerWidth", 6)
-        .attr("markerHeight", 6)
-        .attr("orient", "auto")
-        .append("path")
-        // .attr("fill", color)
-        .attr("d", "M0,-5L10,0L0,5");
+    const link = d3.select(".link").selectAll("path").data(links).join("path");
+    const node = d3
+      .select(".node")
+      .selectAll("g")
+      .data(nodes)
+      .join("g")
+      .call(drag(simulation) as any);
 
-      const link = svg
-        .append("g")
-        .attr("fill", "none")
-        .attr("stroke-width", 1.5)
-        .selectAll("path")
-        .data(links)
-        .join("path")
-        .attr("stroke", "#000000")
-        .attr(
-          "marker-end",
-          (d) => `url(${new URL(`#arrow-${d.type}`, location.toString())})`
-        );
+    simulation.on("tick", () => {
+      link.attr("d", linkArc);
+      node.attr("transform", (d) => `translate(${d.x},${d.y})`);
+    });
+    setColor(() => d3.scaleOrdinal(types, d3.schemeCategory10));
+  }, [types, nodes, links]);
 
-      const node = svg
-        .append("g")
-        .attr("fill", "currentColor")
-        .attr("stroke-linecap", "round")
-        .attr("stroke-linejoin", "round")
-        .selectAll("g")
-        .data(nodes)
-        .join("g")
-        .call(drag(simulation) as any);
-
-      node
-        .append("circle")
-        .attr("stroke", "white")
-        .attr("stroke-width", 1.5)
-        .attr("r", 5)
-        .attr("color", (d) => color(d.id.split("/").slice(0, -1).join(""))); // Extract file prefix
-
-      node
-        .append("text")
-        .attr("x", 8)
-        .attr("y", "0.31em")
-        .text((d) => d.id)
-        .clone(true)
-        .lower()
-        .attr("fill", "none")
-        .attr("stroke", "white")
-        .attr("stroke-width", 3);
-
-      simulation.on("tick", () => {
-        link.attr("d", linkArc);
-        node.attr("transform", (d) => `translate(${d.x},${d.y})`);
-      });
-    }
-  }, []);
-
-  const mouseDown = useRef(false);
   return (
     <>
-      <div>
-        <svg
-          ref={ref}
-          width={"100vw"}
-          height={"100vh"}
-          viewBox={`${minWidth}, ${minHeight}, ${width}, ${height}`}
-          style={{ maxWidth: "100%", font: "12px sans-serif" }}
-          onWheel={(e) => {
-            const pt = transform2D(
-              { x: e.clientX, y: e.clientY },
-              { x: minWidth, y: minHeight },
-              { x: width / window.innerWidth, y: height / window.innerHeight }
-            );
-            const increment = e.deltaY > 0 ? 10 : -10;
-            const newWidth = width + increment;
-            const newHeight = height + increment;
-            const ptTransformed = transform2D(
-              { x: e.clientX, y: e.clientY },
-              { x: minWidth, y: minHeight },
-              {
-                x: newWidth / window.innerWidth,
-                y: newHeight / window.innerHeight,
-              }
-            );
-
-            setWidth((_) => newWidth);
-            setHeight((_) => newHeight);
-            setMinWidth((w) => w - (ptTransformed.x - pt.x));
-            setMinHeight((h) => h - (ptTransformed.y - pt.y));
-          }}
-          onMouseDown={() => {
-            mouseDown.current = true;
-          }}
-          onMouseUp={() => {
-            mouseDown.current = false;
-          }}
-          onMouseMove={(e) => {
-            if (mouseDown.current) {
-              setMinWidth((w) => w - e.movementX);
-              setMinHeight((h) => h - e.movementY);
+      <svg
+        width={"100vw"}
+        height={"100vh"}
+        viewBox={`${minWidth}, ${minHeight}, ${width}, ${height}`}
+        style={{ maxWidth: "100%", font: "12px sans-serif" }}
+        onWheel={(e) => {
+          const pt = transform2D(
+            { x: e.clientX, y: e.clientY },
+            { x: minWidth, y: minHeight },
+            { x: width / window.innerWidth, y: height / window.innerHeight }
+          );
+          const increment = e.deltaY > 0 ? 10 : -10;
+          const newWidth = width + increment;
+          const newHeight = height + increment;
+          const ptTransformed = transform2D(
+            { x: e.clientX, y: e.clientY },
+            { x: minWidth, y: minHeight },
+            {
+              x: newWidth / window.innerWidth,
+              y: newHeight / window.innerHeight,
             }
-          }}
-        ></svg>
-      </div>
+          );
+
+          setWidth((_) => newWidth);
+          setHeight((_) => newHeight);
+          setMinWidth((w) => w - (ptTransformed.x - pt.x));
+          setMinHeight((h) => h - (ptTransformed.y - pt.y));
+        }}
+        onMouseDown={() => {
+          mouseDown.current = true;
+        }}
+        onMouseUp={() => {
+          mouseDown.current = false;
+        }}
+        onMouseMove={(e) => {
+          if (mouseDown.current) {
+            setMinWidth((w) => w - e.movementX);
+            setMinHeight((h) => h - e.movementY);
+          }
+        }}
+      >
+        <defs>
+          {types.map((t) => (
+            <marker
+              id={`arrow-${t}`}
+              key={`arrow-${t}`}
+              viewBox="0 -5 10 10"
+              refX={15}
+              refY={-0.5}
+              markerWidth={6}
+              markerHeight={6}
+              orient={"auto"}
+            >
+              <path d="M0,-5L10,0L0,5"></path>
+            </marker>
+          ))}
+        </defs>
+        {/* Links */}
+        <g fill="None" strokeWidth={1.5} className="link">
+          {links.map((l, i) => (
+            <path
+              key={i}
+              stroke="#000000"
+              markerEnd={`url(${new URL(
+                `#arrow-${l.type}`,
+                location.toString()
+              )})`}
+            ></path>
+          ))}
+        </g>
+        {/* Nodes */}
+        <g
+          fill="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="node"
+        >
+          {nodes.map((n) => (
+            <g key={n.id}>
+              <text
+                x={8}
+                y={"0.31em"}
+                stroke="white"
+                strokeWidth={3}
+                fill="none"
+              >
+                {n.id}
+              </text>
+              <circle
+                stroke="white"
+                strokeWidth={1.5}
+                r={5}
+                color={color(n.id.split("/").slice(0, -1).join(""))}
+              ></circle>
+              <text x={8} y={"0.31em"}>
+                {n.id}
+              </text>
+            </g>
+          ))}
+        </g>
+      </svg>
     </>
   );
 }
