@@ -20,6 +20,7 @@ export default function GraphVis({ types, nodes, links }: GraphVisProps) {
   const [color, setColor] = useState(() =>
     d3.scaleOrdinal(types, d3.schemeCategory10)
   );
+  const [hoveredNode, setHoveredNode] = useState<String | null>(null);
 
   const mouseDown = useRef(false);
 
@@ -28,9 +29,12 @@ export default function GraphVis({ types, nodes, links }: GraphVisProps) {
       .forceSimulation(nodes)
       .force(
         "link",
-        d3.forceLink<Node, Graph>(links).id((d) => d.id)
+        d3
+          .forceLink<Node, Graph>(links)
+          .id((d) => d.id)
+          .distance(1000)
       )
-      .force("charge", d3.forceManyBody().strength(-8000))
+      .force("charge", d3.forceManyBody().strength(-800))
       .force("x", d3.forceX())
       .force("y", d3.forceY());
 
@@ -93,27 +97,46 @@ export default function GraphVis({ types, nodes, links }: GraphVisProps) {
         }}
       >
         <defs>
-          <marker
-            id={`arrow-import`}
-            viewBox="0 -5 10 10"
-            refX={15}
-            refY={-0.5}
-            markerWidth={6}
-            markerHeight={6}
-            orient={"auto"}
-          >
-            <path d="M0,-5L10,0L0,5"></path>
-          </marker>
+          {[
+            ["default", "ccc"],
+            ["out", "red"],
+            ["in", "blue"],
+          ].map((item) => (
+            <marker
+              id={`arrow-${item[0]}`}
+              viewBox="0 -5 10 10"
+              refX={15}
+              refY={-0.5}
+              markerWidth={6}
+              markerHeight={6}
+              orient={"auto"}
+              fill={item[1]}
+            >
+              <path d="M0,-5L10,0L0,5"></path>
+            </marker>
+          ))}
         </defs>
         {/* Links */}
         <g fill="None" strokeWidth={1.5} className="link">
-          {links.map((l, i) => (
+          {links.map((l: any, i) => (
             <path
               key={i}
-              stroke="#000000"
+              stroke={`${
+                l.source.id === hoveredNode
+                  ? "red"
+                  : l.target.id === hoveredNode
+                  ? "blue"
+                  : "#ccc"
+              }`}
               markerEnd={(() => {
                 return `url(${new URL(
-                  `#arrow-${l.type}`,
+                  `#arrow-${
+                    l.source.id === hoveredNode
+                      ? "out"
+                      : l.target.id === hoveredNode
+                      ? "in"
+                      : "default"
+                  }`,
                   location.toString()
                 )})`;
               })()}
@@ -135,6 +158,7 @@ export default function GraphVis({ types, nodes, links }: GraphVisProps) {
                 stroke="white"
                 strokeWidth={3}
                 fill="none"
+                className="prevent-select"
               >
                 {n.id}
               </text>
@@ -143,8 +167,10 @@ export default function GraphVis({ types, nodes, links }: GraphVisProps) {
                 strokeWidth={1.5}
                 r={5}
                 color={color(n.id.split("/").slice(0, -1).join(""))}
+                onMouseOver={() => setHoveredNode(n.id)}
+                onMouseOut={() => setHoveredNode(null)}
               ></circle>
-              <text x={8} y={"0.31em"}>
+              <text x={8} y={"0.31em"} className="prevent-select">
                 {n.id}
               </text>
             </g>
