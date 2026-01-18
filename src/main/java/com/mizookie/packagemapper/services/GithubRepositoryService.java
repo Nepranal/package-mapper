@@ -17,15 +17,31 @@ public interface GithubRepositoryService {
 
     void downloadPrivateRepository(String repositoryUrlString, String token);
 
+    /**
+     * Get the current commit version of {@code repositoryName}
+     */
     String getCurrentCommit(String repositoryName) throws GitAPIException, IOException;
 
+    /**
+     * Get commit version of {@code repositoryName} based on {@code version} which could be limited by {@code limit}.
+     * If you don't want to limit, then just set limit to be the maximum integer number
+     */
     List<String> getRepoCommitVersions(String repositoryName, String version, int limit) throws GitAPIException, IOException;
 
     void checkoutCommit(String repositoryName, String version) throws IOException, GitAPIException;
 
+    /**
+     * Perform {@code git fetch} for all remote branches
+     */
     void fetchAll(String repositoryName) throws IOException, GitAPIException;
 
-    public List<String> getAllRepo();
+    /**
+     * get all cloned repository names
+     */
+    List<String> getAllRepo();
 
+    /**
+     * Get all reachable repository commit versions
+     */
     List<String> getLogAll(String repositoryName) throws GitAPIException, IOException;
 }

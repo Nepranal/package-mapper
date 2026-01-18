@@ -37,42 +37,6 @@ public class GraphServiceImpl implements GraphService {
     public GraphServiceImpl(GithubRepositoryService githubService) {
         // Initialize a directed graph
         this.dependencyGraph = new DefaultDirectedGraph<>(DefaultEdge.class);
-
-    }
-
-    public static Graph<String, DefaultEdge> createLargeGraph() {
-        Graph<String, DefaultEdge> graph = new DefaultDirectedGraph<>(DefaultEdge.class);
-
-        // Add vertices
-        for (int i = 1; i <= 1000; i++) {
-            graph.addVertex("v" + i);
-        }
-
-        // Add edges
-        for (int i = 1; i < 1000; i++) {
-            graph.addEdge("v" + i, "v" + (i + 1));
-        }
-        graph.addEdge("v1000", "v1");
-
-        return graph;
-    }
-
-    public static Graph<String, DefaultEdge> createSmallGraph() {
-        Graph<String, DefaultEdge> graph = new DefaultDirectedGraph<>(DefaultEdge.class);
-
-        // Add vertices
-        graph.addVertex("A");
-        graph.addVertex("B");
-        graph.addVertex("C");
-        graph.addVertex("D");
-
-        // Add edges
-        graph.addEdge("A", "B");
-        graph.addEdge("B", "C");
-        graph.addEdge("C", "D");
-        graph.addEdge("D", "A");
-
-        return graph;
     }
 
     public static Graph<String, DefaultEdge> createMediumGraph() {
@@ -90,10 +54,6 @@ public class GraphServiceImpl implements GraphService {
         graph.addEdge("v100", "v1");
 
         return graph;
-    }
-
-    public Set<DefaultEdge> getOutgoingEdges(String vertex) {
-        return dependencyGraph.outgoingEdgesOf(vertex);
     }
 
     public Set<String> getVertices() {
@@ -167,13 +127,13 @@ public class GraphServiceImpl implements GraphService {
             map.put("label", DefaultAttribute.createAttribute(v));
             return map;
         });
-        exporter.exportGraph(dependencyGraph, new FileWriter(String.format("%s/%s_%s.gv", analysisDirectory, repositoryName, version)));
+        exporter.exportGraph(dependencyGraph, new FileWriter(new File(analysisDirectory, String.format("%s_%s.gv", repositoryName, version))));
     }
 
     public Graph<String, DefaultEdge> importGraph(String fileName) throws FileNotFoundException {
         DOTImporter<String, DefaultEdge> importer = new DOTImporter<>();
         importer.setVertexWithAttributesFactory((k, l) -> String.valueOf(l.get("label")));
-        importer.importGraph(dependencyGraph, new FileReader(String.format("%s/%s.gv", analysisDirectory, fileName)));
+        importer.importGraph(dependencyGraph, new FileReader(new File(analysisDirectory, fileName.concat(".gv"))));
         return dependencyGraph;
     }
 }

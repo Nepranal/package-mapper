@@ -25,11 +25,20 @@ public interface GraphService {
     // Display the graph
     void displayGraph(String repositoryName);
 
+    /**
+     * Get all vertices in a graph
+     */
     Set<String> getVertices();
 
-    Set<DefaultEdge> getOutgoingEdges(String vertex);
-
+    /**
+     * Save graph as .gv file. The file will be stored with the name {@code s_v.gv}
+     */
     void serializeGraph(String s, String v) throws IOException;
 
+    /**
+     * Get stored file. fileName is a .gv file but don't specify the .gv part
+     *
+     * @param fileName file name with no extension specified
+     */
     Graph<String, DefaultEdge> importGraph(String fileName) throws FileNotFoundException;
 }

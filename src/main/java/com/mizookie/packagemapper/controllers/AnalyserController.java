@@ -75,9 +75,7 @@ public class AnalyserController {
         try {
             graph = graphService.importGraph(String.format("%s_%s", repo, version));
         } catch (FileNotFoundException e) {
-            System.out.println("hi");
             analyserService.analyse(String.format("%s/%s", localRepositoryDirectory, repo), version);
-            System.out.println("hello");
             graph = graphService.importGraph(String.format("%s_%s", repo, version));
         }
         Graph<String, DefaultEdge> finalGraph = graph;

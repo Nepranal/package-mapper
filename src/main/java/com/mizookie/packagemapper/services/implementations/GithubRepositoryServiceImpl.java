@@ -116,7 +116,7 @@ public class GithubRepositoryServiceImpl implements GithubRepositoryService {
     }
 
     public void fetchAll(String repositoryName) throws IOException, GitAPIException {
-        Git git = new Git(builder.setGitDir(new File(String.format("%s/%s/.git", localRepositoryDirectory, repositoryName)))
+        Git git = new Git(builder.setGitDir(new File(new File(localRepositoryDirectory, repositoryName), ".git"))
                 .readEnvironment()
                 .findGitDir()
                 .build());
@@ -129,9 +129,20 @@ public class GithubRepositoryServiceImpl implements GithubRepositoryService {
         });
     }
 
-    // TODO: Make a version that is pageable
+    /**
+     * This function allows you to get commit versions of a repository. By default, since this is also how git behaves,
+     * the function gives the commit versions viewable by the current commit version. If {@code version} is specified, then it will show
+     * the commit versions viewable from that version.
+     *
+     * @param repositoryName name of the repository.
+     * @param version        repository commit version. Specifying this has the side effect
+     *                       of changing the repository's commit version
+     * @param limit          Limit the number of commit versions to fetch
+     * @param all            Same as git log's {@code --all} parameter
+     * @return List of commit versions
+     */
     public List<String> getRepoCommitVersions(String repositoryName, String version, int limit, boolean all) throws GitAPIException, IOException {
-        Git git = new Git(builder.setGitDir(new File(String.format("%s/%s/.git", localRepositoryDirectory, repositoryName)))
+        Git git = new Git(builder.setGitDir(new File(new File(localRepositoryDirectory, repositoryName), ".git"))
                 .readEnvironment()
                 .findGitDir()
                 .build());

@@ -3,12 +3,15 @@ package com.mizookie.packagemapper.utils;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @UtilityClass
@@ -46,7 +49,7 @@ public class FileService {
         return Paths.get(fileName).getFileName().toString();
     }
 
-    // Get all files in a directory and its subdirectories
+    // Get all files in a directory and its subdirectories but ignore hidden files
     public List<String> getFiles(String directoryPath) {
         List<String> files = null;
         try {
@@ -63,7 +66,7 @@ public class FileService {
     public List<String> getCurrentDirectory(String directoryPath) {
         ArrayList<String> directories = new ArrayList<>();
         File folder = new File(directoryPath);
-        for (File file : folder.listFiles()) {
+        for (File file : Objects.requireNonNull(folder.listFiles())) {
             if (file.isDirectory()) {
                 directories.add(file.getName());
             }
@@ -96,5 +99,22 @@ public class FileService {
         if (!f.delete()) {
             log.error("Failed to delete file: {}", f.getAbsolutePath());
         }
+    }
+
+    // This method crawls the code in the repository and extracts the imports
+    // Probably not a good idea to make this concurrent: https://stackoverflow.com/a/18972018
+    static public Boolean findInCrawl(String path, String[] targets) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
+            String line;
+            String target = String.join("|", targets);
+            while ((line = reader.readLine()) != null) {
+                if (line.matches(String.format(".*\\b(%s)\\b.*", target))) {
+                    return true;
+                }
+            }
+        } catch (IOException e) {
+            System.out.println(path);
+        }
+        return false;
     }
 }
