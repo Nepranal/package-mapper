@@ -3,12 +3,10 @@ package com.mizookie.packagemapper.utils;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -51,16 +49,13 @@ public class FileService {
 
     // Get all files in a directory and its subdirectories but ignore hidden files
     public List<String> getFiles(String directoryPath) {
-        List<String> files = null;
+        VisibleFileVisitor visitor = new VisibleFileVisitor();
         try {
-            files = Files.walk(Paths.get(directoryPath))
-                    .filter(Files::isRegularFile)
-                    .map(Object::toString)
-                    .toList();
+            Files.walkFileTree(Paths.get(directoryPath), visitor);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return files;
+        return visitor.getFiles().stream().map(Path::toString).toList();
     }
 
     public List<String> getCurrentDirectory(String directoryPath) {
@@ -101,20 +96,27 @@ public class FileService {
         }
     }
 
-    // This method crawls the code in the repository and extracts the imports
-    // Probably not a good idea to make this concurrent: https://stackoverflow.com/a/18972018
-    static public Boolean findInCrawl(String path, String[] targets) {
-        try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
-            String line;
-            String target = String.join("|", targets);
-            while ((line = reader.readLine()) != null) {
-                if (line.matches(String.format(".*\\b(%s)\\b.*", target))) {
-                    return true;
-                }
+    class VisibleFileVisitor extends SimpleFileVisitor<Path> {
+        private final ArrayList<Path> files = new ArrayList<>();
+
+        @Override
+        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+            if (Files.isHidden(dir)) {
+                return FileVisitResult.SKIP_SUBTREE;
             }
-        } catch (IOException e) {
-            System.out.println(path);
+            return FileVisitResult.CONTINUE;
         }
-        return false;
+
+        @Override
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            if (attrs.isRegularFile() && !Files.isHidden(file)) {
+                files.add(file);
+            }
+            return FileVisitResult.CONTINUE;
+        }
+
+        public List<Path> getFiles() {
+            return files;
+        }
     }
 }

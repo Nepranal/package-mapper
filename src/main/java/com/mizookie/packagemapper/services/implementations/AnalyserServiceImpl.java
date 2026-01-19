@@ -17,6 +17,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 @Slf4j
@@ -35,7 +38,7 @@ public class AnalyserServiceImpl implements AnalyserService {
         N = Integer.parseInt(n);
 
         for (int i = 0; i < N; ++i) {
-            AnalyserTask t = new AnalyserTask();
+            AnalyserTask t = new AnalyserTask(i);
             threads.add(t);
             t.start();
         }
@@ -78,7 +81,7 @@ public class AnalyserServiceImpl implements AnalyserService {
             AnalyserTask t = threads.get(i);
             t.setStartPoint(i * division);
             t.setEndPoint((division == 1) ?
-                    Math.min(numberOfFiles, i + 1) % numberOfFiles - 1
+                    Math.min(numberOfFiles + 1, i + 1) % (numberOfFiles + 1) - 1
                     : Math.min(numberOfFiles, (i + 1) * division) - 1);
         }
         graphService.setDependencyMap(AnalyserTask.classesMap);
@@ -86,13 +89,11 @@ public class AnalyserServiceImpl implements AnalyserService {
         for (String filePath : AnalyserTask.fileNames) {
             // Producer stuff here
             AnalyserTask.init = 0;
-            AnalyserTask.currentFileName = filePath
-                    .replaceFirst(localRepositoryDirectory, "")
-                    .replaceFirst("^/,*", "");
             try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     AnalyserTask.producerSemaphore.acquire(N);
+                    AnalyserTask.currentFileName = filePath;
                     AnalyserTask.line = line;
                     AnalyserTask.readerSemaphore.release(N);
                 }
@@ -134,26 +135,43 @@ public class AnalyserServiceImpl implements AnalyserService {
         static Semaphore producerSemaphore = new Semaphore(N);
         static Semaphore initLock = new Semaphore(1);
         static Semaphore resultLock = new Semaphore(1);
-        static int init = N;
+        static Lock doneProcessingLock = new ReentrantLock();
+        static Condition doneProcessingCondition = doneProcessingLock.newCondition();
+        static int init = N, doneProcessing = 0;
         static String line;
-
         ArrayList<Integer> range = new ArrayList<>();
+        private int id;
         private int startPoint, endPoint, found = 0;
+
+        AnalyserTask(int id) {
+            this.id = id;
+        }
 
         public void run() {
             while (true) {
                 try {
                     readerSemaphore.acquire();
                     // New line available
+                    initLock.acquire();
                     if (init < N) {
                         initState();
-                        initLock.acquire();
                         init++;
-                        initLock.release();
                     }
+                    initLock.release();
                     String line = AnalyserTask.line; // Copy line
+                    String currentFileName = AnalyserTask.currentFileName; // Copy current file name
                     producerSemaphore.release();
-                    processLine(line);
+                    processLine(line, currentFileName);
+
+                    doneProcessingLock.lock();
+                    doneProcessing++;
+                    while (doneProcessing < N) {
+                        doneProcessingCondition.await();
+                        doneProcessing = N; // Everybody's done if this line is executed.
+                    }
+                    doneProcessingCondition.signalAll();
+                    doneProcessing = 0;
+                    doneProcessingLock.unlock();
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -168,12 +186,12 @@ public class AnalyserServiceImpl implements AnalyserService {
             }
         }
 
-        private void processLine(String line) throws InterruptedException {
+        private void processLine(String line, String currentFileName) throws InterruptedException {
             ArrayList<String> temp = new ArrayList<>();
             for (int i = found; i < range.size(); ++i) {
-                String target = FileService.getFileNameOnly(fileNames.get(range.get(i)));
+                String target = FileService.getFileNameWithoutExtension(fileNames.get(range.get(i)));
                 if (line.matches(String.format(".*\\b(%s)\\b.*", target))) {
-                    temp.add(target);
+                    temp.add(fileNames.get(range.get(i)));
                     Collections.swap(range, found, i);
                     found += 1;
                 }
@@ -181,9 +199,10 @@ public class AnalyserServiceImpl implements AnalyserService {
 
             resultLock.acquire();
             for (String s : temp) {
-                graphService.addEdge(currentFileName, s
-                        .replaceFirst(localRepositoryDirectory, "")
-                        .replaceFirst("^/,*", ""));
+                if (!s.equals(currentFileName)) {
+                    graphService.addEdge(FileService.getFileNameWithExtension(s),
+                            FileService.getFileNameWithExtension(currentFileName));
+                }
             }
             resultLock.release();
         }
