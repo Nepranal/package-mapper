@@ -136,12 +136,13 @@ public class AnalyserServiceImpl implements AnalyserService {
         static Semaphore initLock = new Semaphore(1);
         static Semaphore resultLock = new Semaphore(1);
         static Lock doneProcessingLock = new ReentrantLock();
-        static Condition doneProcessingCondition = doneProcessingLock.newCondition();
-        static int init = N, doneProcessing = 0;
+        static int init = N;
         static String line;
+        static int[] doneProcessing = {0, 0};
+        static Condition[] doneProcessingConditions = {doneProcessingLock.newCondition(), doneProcessingLock.newCondition()};
         ArrayList<Integer> range = new ArrayList<>();
         private int id;
-        private int startPoint, endPoint, found = 0;
+        private int startPoint, endPoint, found = 0, round = 1;
 
         AnalyserTask(int id) {
             this.id = id;
@@ -164,14 +165,15 @@ public class AnalyserServiceImpl implements AnalyserService {
                     processLine(line, currentFileName);
 
                     doneProcessingLock.lock();
-                    doneProcessing++;
-                    while (doneProcessing < N) {
-                        doneProcessingCondition.await();
-                        doneProcessing = N; // Everybody's done if this line is executed.
+                    doneProcessing[round] += 1;
+                    while (doneProcessing[round] < N) {
+                        doneProcessingConditions[round].await();
+                        doneProcessing[round] = N;
                     }
-                    doneProcessingCondition.signalAll();
-                    doneProcessing = 0;
+                    doneProcessingConditions[round].signalAll();
+                    doneProcessing[round] = 0;
                     doneProcessingLock.unlock();
+                    round = (round + 1) % 2;
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
