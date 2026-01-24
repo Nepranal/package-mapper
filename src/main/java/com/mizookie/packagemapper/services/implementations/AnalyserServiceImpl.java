@@ -99,10 +99,10 @@ public class AnalyserServiceImpl implements AnalyserService {
                 }
             }
         }
+        AnalyserTask.producerSemaphore.acquire(N);
         AnalyserTask.line = "";
         AnalyserTask.currentFileName = "";
         AnalyserTask.readerSemaphore.release(N);
-        AnalyserTask.producerSemaphore.acquire(N);
 
         graphService.serializeGraph(repositoryName, version);
     }
