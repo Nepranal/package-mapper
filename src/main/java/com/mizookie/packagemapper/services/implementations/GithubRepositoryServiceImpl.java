@@ -28,7 +28,6 @@ import java.util.List;
 @Component
 public class GithubRepositoryServiceImpl implements GithubRepositoryService {
 
-    private final FileRepositoryBuilder builder = new FileRepositoryBuilder();
     @Value("${repository.directory}")
     private String localRepositoryDirectory;
     // Absolute path to the user's repository directory (local)
@@ -116,6 +115,7 @@ public class GithubRepositoryServiceImpl implements GithubRepositoryService {
     }
 
     public void fetchAll(String repositoryName) throws IOException, GitAPIException {
+        FileRepositoryBuilder builder = new FileRepositoryBuilder();
         Git git = new Git(builder.setGitDir(new File(new File(localRepositoryDirectory, repositoryName), ".git"))
                 .readEnvironment()
                 .findGitDir()
@@ -142,6 +142,7 @@ public class GithubRepositoryServiceImpl implements GithubRepositoryService {
      * @return List of commit versions
      */
     public List<String> getRepoCommitVersions(String repositoryName, String version, int limit, boolean all) throws GitAPIException, IOException {
+        FileRepositoryBuilder builder = new FileRepositoryBuilder();
         Git git = new Git(builder.setGitDir(new File(new File(localRepositoryDirectory, repositoryName), ".git"))
                 .readEnvironment()
                 .findGitDir()
