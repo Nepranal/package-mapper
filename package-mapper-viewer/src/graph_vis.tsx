@@ -18,7 +18,7 @@ export default function GraphVis({ types, nodes, links }: GraphVisProps) {
   const [minWidth, setMinWidth] = useState(-width / 2);
   const [minHeight, setMinHeight] = useState(-height / 2);
   const [color, setColor] = useState(() =>
-    d3.scaleOrdinal(types, d3.schemeCategory10)
+    d3.scaleOrdinal(types, d3.schemeCategory10),
   );
   const [hoveredNode, setHoveredNode] = useState<String | null>(null);
 
@@ -32,7 +32,7 @@ export default function GraphVis({ types, nodes, links }: GraphVisProps) {
         d3
           .forceLink<Node, Graph>(links)
           .id((d) => d.id)
-          .distance(1000)
+          .distance(1000),
       )
       .force("charge", d3.forceManyBody().strength(-800))
       .force("x", d3.forceX())
@@ -64,7 +64,7 @@ export default function GraphVis({ types, nodes, links }: GraphVisProps) {
           const pt = transform2D(
             { x: e.clientX, y: e.clientY },
             { x: minWidth, y: minHeight },
-            { x: width / window.innerWidth, y: height / window.innerHeight }
+            { x: width / window.innerWidth, y: height / window.innerHeight },
           );
           const increment = e.deltaY > 0 ? 10 : -10;
           const newWidth = width + increment;
@@ -75,7 +75,7 @@ export default function GraphVis({ types, nodes, links }: GraphVisProps) {
             {
               x: newWidth / window.innerWidth,
               y: newHeight / window.innerHeight,
-            }
+            },
           );
 
           setWidth((_) => newWidth);
@@ -125,8 +125,8 @@ export default function GraphVis({ types, nodes, links }: GraphVisProps) {
                 l.source.id === hoveredNode
                   ? "red"
                   : l.target.id === hoveredNode
-                  ? "blue"
-                  : "#ccc"
+                    ? "blue"
+                    : "#ccc"
               }`}
               markerEnd={(() => {
                 return `url(${new URL(
@@ -134,10 +134,10 @@ export default function GraphVis({ types, nodes, links }: GraphVisProps) {
                     l.source.id === hoveredNode
                       ? "out"
                       : l.target.id === hoveredNode
-                      ? "in"
-                      : "default"
+                        ? "in"
+                        : "default"
                   }`,
-                  location.toString()
+                  location.toString(),
                 )})`;
               })()}
             ></path>
@@ -211,7 +211,7 @@ const drag = (simulation: d3.Simulation<Node, undefined>) => {
 const transform2D = (
   point: { x: number; y: number },
   translate: { x: number; y: number },
-  scale: { x: number; y: number }
+  scale: { x: number; y: number },
 ) => {
   return {
     x: point.x * scale.x + translate.x,
@@ -231,541 +231,28 @@ function linkArc(d: any) {
 
 export const graph: Graph[] = [
   {
-    source: "chained-reconstructions/DataService.py",
-    target: "chained-reconstructions/FileService.py",
+    source: "GameClient.py",
+    target: "README.md",
     type: "import",
   },
   {
-    source: "chained-reconstructions/DataService.py",
-    target: "chained-reconstructions/database.py",
+    source: "GameServer.py",
+    target: "README.md",
     type: "import",
   },
   {
-    source: "chained-reconstructions/DataService.py",
-    target: "chained-reconstructions/DBService.py",
+    source: "UserInfo.txt",
+    target: "README.md",
     type: "import",
   },
   {
-    source: "chained-reconstructions/ChainReconstructionService.py",
-    target: "chained-reconstructions/DataService.py",
+    source: "UserInfo.txt",
+    target: "GameServer.py",
     type: "import",
   },
   {
-    source: "chained-reconstructions/app.py",
-    target: "chained-reconstructions/DataService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/index",
-    target: "chained-reconstructions/DataService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/AlignmentService.py",
-    target: "chained-reconstructions/DataService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/ChainReconstructionService.py",
-    target: "chained-reconstructions/FileService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/app.py",
-    target: "chained-reconstructions/FileService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/index",
-    target: "chained-reconstructions/FileService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/AlignmentService.py",
-    target: "chained-reconstructions/FileService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/DBService.py",
-    target: "chained-reconstructions/database.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/ChainReconstructionService.py",
-    target: "chained-reconstructions/database.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/app.py",
-    target: "chained-reconstructions/database.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/index",
-    target: "chained-reconstructions/database.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/ChainReconstructionService.py",
-    target: "chained-reconstructions/DBService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/app.py",
-    target: "chained-reconstructions/DBService.py",
-    type: "import",
-  },
-  {
-    source:
-      "chained-reconstructions/.git/objects/pack/pack-fe93bbeebfa3cf36ddb4db60ecb09eba836ebdfb.pack",
-    target: "chained-reconstructions/DBService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/index",
-    target: "chained-reconstructions/DBService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/AlignmentService.py",
-    target: "chained-reconstructions/DBService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/ChainReconstructionService.py",
-    target: "chained-reconstructions/utils.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/app.py",
-    target: "chained-reconstructions/ChainReconstructionService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/index",
-    target: "chained-reconstructions/ChainReconstructionService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/ChainReconstructionService.py",
-    target: "chained-reconstructions/AlignmentService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/index",
-    target: "chained-reconstructions/utils.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/AlignmentService.py",
-    target: "chained-reconstructions/utils.py",
-    type: "import",
-  },
-  {
-    source:
-      "chained-reconstructions/.git/objects/pack/pack-fe93bbeebfa3cf36ddb4db60ecb09eba836ebdfb.pack",
-    target: "chained-reconstructions/app.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/index",
-    target: "chained-reconstructions/app.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/app.py",
-    target: "chained-reconstructions/AlignmentService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/index",
-    target: "chained-reconstructions/AlignmentService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/ORIG_HEAD",
-    target: "chained-reconstructions/chained_colmap/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/config",
-    target: "chained-reconstructions/chained_colmap/.gitignore",
-    type: "import",
-  },
-  {
-    source:
-      "chained-reconstructions/.git/objects/pack/pack-fe93bbeebfa3cf36ddb4db60ecb09eba836ebdfb.pack",
-    target: "chained-reconstructions/chained_colmap/DBService.py",
-    type: "import",
-  },
-  {
-    source:
-      "chained-reconstructions/.git/objects/pack/pack-fe93bbeebfa3cf36ddb4db60ecb09eba836ebdfb.pack",
-    target: "chained-reconstructions/chained_colmap/.gitignore",
-    type: "import",
-  },
-  {
-    source:
-      "chained-reconstructions/.git/objects/pack/pack-fe93bbeebfa3cf36ddb4db60ecb09eba836ebdfb.pack",
-    target: "chained-reconstructions/chained_colmap/app.py",
-    type: "import",
-  },
-  {
-    source:
-      "chained-reconstructions/.git/objects/pack/pack-fe93bbeebfa3cf36ddb4db60ecb09eba836ebdfb.idx",
-    target: "chained-reconstructions/chained_colmap/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/HEAD",
-    target: "chained-reconstructions/chained_colmap/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/logs/HEAD",
-    target: "chained-reconstructions/chained_colmap/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/logs/refs/heads/main",
-    target: "chained-reconstructions/chained_colmap/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/logs/refs/remotes/origin/HEAD",
-    target: "chained-reconstructions/chained_colmap/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/refs/heads/main",
-    target: "chained-reconstructions/chained_colmap/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/refs/remotes/origin/HEAD",
-    target: "chained-reconstructions/chained_colmap/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/refs/remotes/origin/main",
-    target: "chained-reconstructions/chained_colmap/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/index",
-    target: "chained-reconstructions/chained_colmap/DataService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/index",
-    target: "chained-reconstructions/chained_colmap/FileService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/index",
-    target: "chained-reconstructions/chained_colmap/database.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/index",
-    target: "chained-reconstructions/chained_colmap/DBService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/index",
-    target:
-      "chained-reconstructions/chained_colmap/ChainReconstructionService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/index",
-    target: "chained-reconstructions/chained_colmap/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/index",
-    target: "chained-reconstructions/chained_colmap/utils.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/index",
-    target: "chained-reconstructions/chained_colmap/app.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/index",
-    target: "chained-reconstructions/chained_colmap/AlignmentService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/FETCH_HEAD",
-    target: "chained-reconstructions/chained_colmap/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/ORIG_HEAD",
-    target: "chained-reconstructions/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/config",
-    target: "chained-reconstructions/.gitignore",
-    type: "import",
-  },
-  {
-    source:
-      "chained-reconstructions/.git/objects/pack/pack-fe93bbeebfa3cf36ddb4db60ecb09eba836ebdfb.pack",
-    target: "chained-reconstructions/.gitignore",
-    type: "import",
-  },
-  {
-    source:
-      "chained-reconstructions/.git/objects/pack/pack-fe93bbeebfa3cf36ddb4db60ecb09eba836ebdfb.idx",
-    target: "chained-reconstructions/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/HEAD",
-    target: "chained-reconstructions/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/logs/HEAD",
-    target: "chained-reconstructions/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/logs/refs/heads/main",
-    target: "chained-reconstructions/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/logs/refs/remotes/origin/HEAD",
-    target: "chained-reconstructions/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/refs/heads/main",
-    target: "chained-reconstructions/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/refs/remotes/origin/HEAD",
-    target: "chained-reconstructions/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/refs/remotes/origin/main",
-    target: "chained-reconstructions/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/index",
-    target: "chained-reconstructions/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.git/FETCH_HEAD",
-    target: "chained-reconstructions/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/DataService.py",
-    target: "chained-reconstructions/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/FileService.py",
-    target: "chained-reconstructions/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/database.py",
-    target: "chained-reconstructions/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/DBService.py",
-    target: "chained-reconstructions/.gitignore",
-    type: "import",
-  },
-  {
-    source:
-      "chained-reconstructions/chained_colmap/ChainReconstructionService.py",
-    target: "chained-reconstructions/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/.gitignore",
-    target: "chained-reconstructions/chained_colmap/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/utils.py",
-    target: "chained-reconstructions/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/app.py",
-    target: "chained-reconstructions/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/AlignmentService.py",
-    target: "chained-reconstructions/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/DataService.py",
-    target: "chained-reconstructions/chained_colmap/FileService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/DataService.py",
-    target: "chained-reconstructions/chained_colmap/database.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/DataService.py",
-    target: "chained-reconstructions/chained_colmap/DBService.py",
-    type: "import",
-  },
-  {
-    source:
-      "chained-reconstructions/chained_colmap/ChainReconstructionService.py",
-    target: "chained-reconstructions/chained_colmap/DataService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/DataService.py",
-    target: "chained-reconstructions/chained_colmap/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/app.py",
-    target: "chained-reconstructions/chained_colmap/DataService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/AlignmentService.py",
-    target: "chained-reconstructions/chained_colmap/DataService.py",
-    type: "import",
-  },
-  {
-    source:
-      "chained-reconstructions/chained_colmap/ChainReconstructionService.py",
-    target: "chained-reconstructions/chained_colmap/FileService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/FileService.py",
-    target: "chained-reconstructions/chained_colmap/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/app.py",
-    target: "chained-reconstructions/chained_colmap/FileService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/AlignmentService.py",
-    target: "chained-reconstructions/chained_colmap/FileService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/DBService.py",
-    target: "chained-reconstructions/chained_colmap/database.py",
-    type: "import",
-  },
-  {
-    source:
-      "chained-reconstructions/chained_colmap/ChainReconstructionService.py",
-    target: "chained-reconstructions/chained_colmap/database.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/database.py",
-    target: "chained-reconstructions/chained_colmap/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/app.py",
-    target: "chained-reconstructions/chained_colmap/database.py",
-    type: "import",
-  },
-  {
-    source:
-      "chained-reconstructions/chained_colmap/ChainReconstructionService.py",
-    target: "chained-reconstructions/chained_colmap/DBService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/DBService.py",
-    target: "chained-reconstructions/chained_colmap/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/app.py",
-    target: "chained-reconstructions/chained_colmap/DBService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/AlignmentService.py",
-    target: "chained-reconstructions/chained_colmap/DBService.py",
-    type: "import",
-  },
-  {
-    source:
-      "chained-reconstructions/chained_colmap/ChainReconstructionService.py",
-    target: "chained-reconstructions/chained_colmap/.gitignore",
-    type: "import",
-  },
-  {
-    source:
-      "chained-reconstructions/chained_colmap/ChainReconstructionService.py",
-    target: "chained-reconstructions/chained_colmap/utils.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/app.py",
-    target:
-      "chained-reconstructions/chained_colmap/ChainReconstructionService.py",
-    type: "import",
-  },
-  {
-    source:
-      "chained-reconstructions/chained_colmap/ChainReconstructionService.py",
-    target: "chained-reconstructions/chained_colmap/AlignmentService.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/utils.py",
-    target: "chained-reconstructions/chained_colmap/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/app.py",
-    target: "chained-reconstructions/chained_colmap/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/AlignmentService.py",
-    target: "chained-reconstructions/chained_colmap/.gitignore",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/app.py",
-    target: "chained-reconstructions/chained_colmap/utils.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/AlignmentService.py",
-    target: "chained-reconstructions/chained_colmap/utils.py",
-    type: "import",
-  },
-  {
-    source: "chained-reconstructions/chained_colmap/app.py",
-    target: "chained-reconstructions/chained_colmap/AlignmentService.py",
+    source: "GameServer.py",
+    target: "GameClient.py",
     type: "import",
   },
 ];

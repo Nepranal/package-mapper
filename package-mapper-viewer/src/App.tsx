@@ -41,8 +41,8 @@ function App() {
                 loading: "Fetching graph...",
                 success: <b>Fetched!</b>,
                 error: (err) => `Couldn't fetch: ${err}`,
-              }
-            )
+              },
+            ),
           );
         },
       },
@@ -73,13 +73,13 @@ function App() {
                 graph.flatMap((l) => [
                   l.source.split("/").slice(0, -1).join(""),
                   l.target.split("/").slice(0, -1).join(""),
-                ])
+                ]),
               ),
-              (id) => id
+              (id) => id,
             )}
             nodes={Array.from(
               new Set(graph.flatMap((l) => [l.source, l.target])),
-              (id) => ({ id })
+              (id) => ({ id }),
             )}
             links={JSON.parse(JSON.stringify(graph))}
           />

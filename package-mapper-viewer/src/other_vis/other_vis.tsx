@@ -45,25 +45,25 @@ export default function OtherVis({ publisher }: { publisher?: Publisher }) {
     setRepoList(
       await toast.promise(otherVisService.current!.fetchRepos(), {
         loading: "Fetching repository names...",
-        success: <b>Fetched!</b>,
+        success: <b>Repository names fetched!</b>,
         error: (err) => `Couldn't fetch: ${err}`,
-      })
+      }),
     );
   const updateRepoFn = async (repo: string) =>
     setVersionList(
       await toast.promise(otherVisService.current!.updateRepoFn(repo), {
         loading: "Updating repository...",
-        success: <b>Updated!</b>,
+        success: <b>Repository updated!</b>,
         error: (err) => `Couldn't update: ${err}`,
-      })
+      }),
     );
   const getVersionListFn = async (repo: string) =>
     setVersionList(
       await toast.promise(otherVisService.current!.getVersionListFn(repo), {
         loading: "Getting commit versions...",
-        success: <b>Fetched!</b>,
+        success: <b>Fetched commit versions!</b>,
         error: (err) => `Couldn't fetch: ${err}`,
-      })
+      }),
     );
 
   // Use effects
@@ -138,9 +138,10 @@ export default function OtherVis({ publisher }: { publisher?: Publisher }) {
                   loading: "Downloading...",
                   success: <b>Downloaded!</b>,
                   error: (err) => `Couldn't fetch: ${err}`,
-                }
+                },
               );
               setDownloading((_) => false);
+              fetchRepos();
             }}
           >
             Download
