@@ -83,12 +83,12 @@ public class AnalyserServiceImpl implements AnalyserService {
             t.setEndPoint((division == 1) ?
                     Math.min(numberOfFiles + 1, i + 1) % (numberOfFiles + 1) - 1
                     : Math.min(numberOfFiles, (i + 1) * division) - 1);
+//            System.out.printf("%d %d%n", t.startPoint, t.endPoint);
         }
         graphService.setDependencyMap(AnalyserTask.classesMap);
 
         for (String filePath : AnalyserTask.fileNames) {
             // Producer stuff here
-            AnalyserTask.init = 0;
             try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
@@ -99,6 +99,11 @@ public class AnalyserServiceImpl implements AnalyserService {
                 }
             }
         }
+        AnalyserTask.line = "";
+        AnalyserTask.currentFileName = "";
+        AnalyserTask.readerSemaphore.release(N);
+        AnalyserTask.producerSemaphore.acquire(N);
+
         graphService.serializeGraph(repositoryName, version);
     }
 
@@ -133,10 +138,8 @@ public class AnalyserServiceImpl implements AnalyserService {
         static String currentFileName;
         static Semaphore readerSemaphore = new Semaphore(0);
         static Semaphore producerSemaphore = new Semaphore(N);
-        static Semaphore initLock = new Semaphore(1);
         static Semaphore resultLock = new Semaphore(1);
         static Lock doneProcessingLock = new ReentrantLock();
-        static int init = N;
         static String line;
         static int[] doneProcessing = {0, 0};
         static Condition[] doneProcessingConditions = {doneProcessingLock.newCondition(), doneProcessingLock.newCondition()};
@@ -149,18 +152,16 @@ public class AnalyserServiceImpl implements AnalyserService {
         }
 
         public void run() {
+            String line, currentFileName = "";
             while (true) {
                 try {
                     readerSemaphore.acquire();
                     // New line available
-                    initLock.acquire();
-                    if (init < N) {
+                    if (!currentFileName.equals(AnalyserTask.currentFileName)) {
                         initState();
-                        init++;
                     }
-                    initLock.release();
-                    String line = AnalyserTask.line; // Copy line
-                    String currentFileName = AnalyserTask.currentFileName; // Copy current file name
+                    currentFileName = AnalyserTask.currentFileName; // Copy current file name
+                    line = AnalyserTask.line; // Copy line
                     producerSemaphore.release();
                     processLine(line, currentFileName);
 
