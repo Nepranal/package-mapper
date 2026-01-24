@@ -47,3 +47,6 @@ analyses/*.log
 *.png
 *.jpg
 *.jpeg
+
+analysis
+.DS_Store
