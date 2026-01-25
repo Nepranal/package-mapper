@@ -2,121 +2,125 @@
 
 Package Mapper is an open-source tool that provides a visual representation of the classes and their dependencies within a GitHub repository. It supports any JavaScript and Java based projects and aims to expand to other languages in the future.
 
-## Installation
+# Additions & Caveats
 
-To install Package Mapper, follow these steps:
+This one is obviously just a version of the [original package mapper](https://github.com/MarzukhAsjad/package-mapper-archive). It provides a visualising system but it doesn't necessarily work out the actual dependencies. Right now, I have only worked it out so that so long as the file name's (just the name, the full path is dropped) mentioned in another file, then that connection will be made. Something more specific is still in the works
 
-1. Clone this repository to your local machine:
-```shell
-git clone https://github.com/MarzukhAsjad/package-mapper.git
-```
+This version also added a visualiser. Have a look at `package-mapper-viewer`. It contains a react (mostly) implementation of [Mobile patent suits](https://observablehq.com/@d3/mobile-patent-suits) from the d3 library
 
-2. Navigate to the `package-mapper` directory:
-```shell
-cd package-mapper
-```
+# Installation
 
-3. Create a `.env` file in the root directory with the following variable(s):
+To use the Package Mapper, just clone the repo and run it with whatever code editor you got
+
+# Backend Usage
+
+Before getting into it, please have a `.env` file and just place it in the same directory this file is located.
+
 ```Dotenv
 REPOSITORY_DIRECTORY=<absolute path where all repositories will be downloaded>
 ANALYSIS_DIRECTORY=<absolute path where all the analysis logs will be stored>
 LOGS_DIRECTORY=<absolute path where all general logs will be stored>
+ANALYSIS_THREADS=<number of threads for file analysis>
 ```
 
-Ensure that these folders with the paths exist.
+The backend has a collection of endpoints. Some are from the previous version of the mapper so here's what I have used (and what the frontend is going to use):
 
-4. Run the application using Maven:
-```shell
-mvnw spring-boot:run
-```
+## `/repository/download`
 
-**Note:** Package Mapper requires Java (JDK 21) to be installed on your machine.
+`POST`
 
-## Usage
-
-To use Package Mapper, you can send `POST` requests to the following endpoints:
-
-1. `/repository/download`: Downloads the code from the specified GitHub repository.
-
-The following JSON can be used as the request body (example):
 ```json
 {
-    "url": "https://github.com/DrKLO/Telegram.git"
+  "url": "https://github.com/Nepranal/chained-reconstructions.git"
 }
 ```
 
-2. `/repository/delete`: Deletes the downloaded code from the local storage.
+Please notice the `.git`.
 
-No request body is required. If you have downloaded a repository and have not closed the application or deleted the repository yet, this endpoint will automatically delete that specific repository. Otherwise, it will delete all repositories by default.
+## `/repository/branches?repo=&version=`
 
-3. `/analyse/custom`: Analyses the downloaded code and generates the dependency graph.
+`GET`
 
-Pass in the absolute path of the local repository you just downloaded in the form of a JSON. The following JSON can be used as the request body (example):
+This has the request parameter `repo` and an optional `version`. Use this to specify commit versions of the repository you want from a particular `version`.
+
+## `/repository/log?repo=`
+
+`GET`
+
+Similar to `/repository/branches?repo=&version=` but get all reachable commit versions
+
+## `/repository/fetch?repo=`
+
+`PUT`
+
+perform `git fetch --all` on `repo`.
+
+## `/repository/all`
+
+`GET`
+
+Get all cloned repository
+
+## `/analyse/graph?repo=&version=`
+
+`GET`
+
+This is the main thing. Perform dependency analysis based on `repo` and `version` (not optional). This returns a dependency graph that looks like this
+
 ```json
-{
-    "repositoryPath": "C:/Users/User/PackageMapper/repositories/Telegram"
-}
+[
+  {
+    "source": "GameClient.py",
+    "target": "README.md",
+    "type": "import"
+  },
+  {
+    "source": "GameServer.py",
+    "target": "README.md",
+    "type": "import"
+  },
+  {
+    "source": "UserInfo.txt",
+    "target": "README.md",
+    "type": "import"
+  },
+  {
+    "source": "UserInfo.txt",
+    "target": "GameServer.py",
+    "type": "import"
+  },
+  {
+    "source": "GameServer.py",
+    "target": "GameClient.py",
+    "type": "import"
+  }
+]
 ```
 
-4. `/analyse/all`: Analyses all repositories downloaded and stored in the repositories folder
+# Visualiser
 
-No request body is required. 
+Before using the visualiser, please run the backend first. The visualiser has simple components to it:
 
-## Overview
+![alt text](<imgs/Screenshot 2026-01-25 at 12.52.17 PM.png>)
 
-The principal idea behind Package Mapper is to aid in understanding the relationships and dependencies between classes and modules within a project. It does this by:
+You'll need to first specify the repo's name in `Repository name` box and choose the `Commit version`. Once a version is picked, the visualiser will try to fetch the graph and shows it.
 
-1. **Analyzing the Repository**: The tool analyzes the provided GitHub repository and identifies the classes, modules, and their import statements.
-2. **Generating Dependencies**: By tracing the import statements, Package Mapper generates a dependency graph that shows how the classes and modules interact with each other.
-3. **Visualizing the Dependencies** (coming soon): The generated dependency graph is visualized in a 2D space, allowing users to pan and explore the relationships between classes and modules.
+If you want to download a new repo, use `Repository Url`.
 
-## Features (coming soon)
+You can move the graph around and it will also highlight import and export using colours
 
-- **Web-based Interface**: Package Mapper provides a user-friendly web interface where users can enter the GitHub repository path.
-- **Dependency Visualization**: The tool displays the visualized graph in a 2D space, with the main class/module in the center and branches pointing out to other classes/modules.
-- **Visual Representation**: Classes/modules are represented as circles, and dependencies/imports are depicted as arrows, making it easy to understand the relationships.
-- **Panning and Zooming**: Users can pan and zoom the visualized graph to navigate and explore the dependencies.
+![alt text](<imgs/Jan-25-2026 13-05-35.gif>)
 
-## System Design
+The colour of the vertex depends on the file's parent path. This way if two files have the same name, they can still be differentiated by their vertex's colour.
 
-### Graphical User Interface (coming soon)
+To run it, just run it with
 
-- Web-based interface for users to interact with the repository visualizer.
-- Input field to enter the GitHub repository path.
-- Visualized graph display in a 2D space with panning and zooming functionality.
+```
+cd package-mapper-viewer
+npm install
+npm run dev
+```
 
-### Backend Logic
+# Coming Soon Features
 
-- Extract code from the provided GitHub repository path.
-- Parse the code to identify class and module definitions.
-- Analyze import statements to determine dependencies between classes/modules.
-- Build a graph data structure to represent relationships and dependencies.
-- Store the graph data structure for visualization.
-
-### Visualization (coming soon)
-
-- Utilize a graph visualization library (e.g., D3.js) to render the graph.
-- Map the graph data to visual elements: circles for classes/modules and arrows for dependencies/imports.
-- Position the main class/module at the center of the graph.
-- Apply layout algorithms for aesthetic arrangement of classes/modules and connections.
-- Enable panning and zooming functionality for navigation.
-
-### Integration with GitHub
-
-- Utilize GitHub APIs to access and download public repositories and retrieve the code.
-- Authenticate the user and obtain necessary permissions to access and download their private repositories.
-
-### Deployment (coming soon)
-
-- Deploy the system as an online service accessible through a web browser.
-- Host the backend logic and visualization on a server or cloud platform.
-- Ensure scalability and performance to handle multiple user requests simultaneously.
-
-### Future Enhancements
-
-- Downloading and analysing private repositories.
-- Extend support for more languages other than Java and JavaScript.
-- Enhance the visualization with a 3D representation.
-- Integrate a feature to visualize git commit history, animating code evolution.
-
-Package Mapper aims to provide a user-friendly and insightful way to visualize and understand the dependencies within a project, facilitating better code comprehension and maintenance.
+Please checkout [package-mapper-archive](https://github.com/MarzukhAsjad/package-mapper-archive) for more info on this

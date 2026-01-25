@@ -50,3 +50,4 @@ analyses/*.log
 
 analysis
 .DS_Store
+!imgs/*
