@@ -25,6 +25,7 @@ import java.util.concurrent.Semaphore;
 public class AnalyserServiceImpl implements AnalyserService {
 
     private static int N;
+    ;
     private final GraphService graphService;
     private final GithubRepositoryService githubRepositoryService;
     private final ArrayList<AnalyzerTask> threads = new ArrayList<>();
