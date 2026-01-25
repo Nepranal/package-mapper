@@ -1,4 +1,4 @@
-package com.mizookie.packagemapper.controllers.github;
+package com.mizookie.packagemapper.controllers;
 
 import com.mizookie.packagemapper.dto.user.GithubRepositoryInfoRequest;
 import com.mizookie.packagemapper.services.GithubRepositoryService;

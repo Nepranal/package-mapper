@@ -1,5 +1,6 @@
 package com.mizookie.packagemapper.services.implementations;
 
+import com.mizookie.packagemapper.resolver.NaiveResolver;
 import com.mizookie.packagemapper.services.AnalyserService;
 import com.mizookie.packagemapper.services.GithubRepositoryService;
 import com.mizookie.packagemapper.services.GraphService;
@@ -12,22 +13,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 @Slf4j
 public class AnalyserServiceImpl implements AnalyserService {
-    static private int N;
+
+    private static int N;
     private final GraphService graphService;
     private final GithubRepositoryService githubRepositoryService;
-    private final ArrayList<AnalyserTask> threads = new ArrayList<>();
+    private final ArrayList<AnalyzerTask> threads = new ArrayList<>();
     @Value("${repository.directory}")
     private String localRepositoryDirectory;
 
@@ -38,7 +38,7 @@ public class AnalyserServiceImpl implements AnalyserService {
         N = Integer.parseInt(n);
 
         for (int i = 0; i < N; ++i) {
-            AnalyserTask t = new AnalyserTask(i);
+            AnalyzerTask t = new AnalyzerTask(i);
             threads.add(t);
             t.start();
         }
@@ -73,36 +73,28 @@ public class AnalyserServiceImpl implements AnalyserService {
         }
         githubRepositoryService.checkoutCommit(repositoryName, version);
 
-        // Initialise the threads
-        AnalyserTask.fileNames = FileService.getFiles(repositoryPath);
-        int numberOfFiles = AnalyserTask.fileNames.size();
+        AnalyzerTask.readerSemaphore.acquire(N);
+        graphService.setDependencyMap(new HashMap<>());
+        AnalyzerTask.filePaths = FileService.getFiles(repositoryPath);
+        int numberOfFiles = AnalyzerTask.filePaths.size();
         int division = (int) Math.ceil(numberOfFiles / (1.0 * N));
         for (int i = 0; i < N; ++i) {
-            AnalyserTask t = threads.get(i);
+            AnalyzerTask t = threads.get(i);
             t.setStartPoint(i * division);
             t.setEndPoint((division == 1) ?
                     Math.min(numberOfFiles + 1, i + 1) % (numberOfFiles + 1) - 1
                     : Math.min(numberOfFiles, (i + 1) * division) - 1);
-//            System.out.printf("%d %d%n", t.startPoint, t.endPoint);
         }
-        graphService.setDependencyMap(AnalyserTask.classesMap);
+        AnalyzerTask.producerSemaphore.release(N);
 
-        for (String filePath : AnalyserTask.fileNames) {
-            // Producer stuff here
-            try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    AnalyserTask.producerSemaphore.acquire(N);
-                    AnalyserTask.currentFileName = filePath;
-                    AnalyserTask.line = line;
-                    AnalyserTask.readerSemaphore.release(N);
-                }
-            }
+        // Wait until all finished
+        AnalyzerTask.readerSemaphore.acquire(N);
+        for (int i = 0; i < N; ++i) {
+            AnalyzerTask t = threads.get(i);
+            t.setStartPoint(0);
+            t.setEndPoint(-1);
         }
-        AnalyserTask.producerSemaphore.acquire(N);
-        AnalyserTask.line = "";
-        AnalyserTask.currentFileName = "";
-        AnalyserTask.readerSemaphore.release(N);
+        AnalyzerTask.producerSemaphore.release(N);
 
         graphService.serializeGraph(repositoryName, version);
     }
@@ -131,83 +123,49 @@ public class AnalyserServiceImpl implements AnalyserService {
         graphService.displayGraph("test");
     }
 
-    // Reader - see analyse()
-    class AnalyserTask extends Thread {
-        static final Map<String, List<String>> classesMap = new HashMap<>();
-        static List<String> fileNames;
-        static String currentFileName;
+    class AnalyzerTask extends Thread {
+        static Semaphore naiveResolverLock = new Semaphore(1);
+        static Semaphore resultLock = new Semaphore(1);
         static Semaphore readerSemaphore = new Semaphore(0);
         static Semaphore producerSemaphore = new Semaphore(N);
-        static Semaphore resultLock = new Semaphore(1);
-        static Lock doneProcessingLock = new ReentrantLock();
-        static String line;
-        static int[] doneProcessing = {0, 0};
-        static Condition[] doneProcessingConditions = {doneProcessingLock.newCondition(), doneProcessingLock.newCondition()};
-        ArrayList<Integer> range = new ArrayList<>();
-        private int id;
-        private int startPoint, endPoint, found = 0, round = 1;
+        static List<String> filePaths;
+        private static NaiveResolver naiveResolver = new NaiveResolver(3);
+        private int startPoint, endPoint, id;
 
-        AnalyserTask(int id) {
+        AnalyzerTask(int id) {
             this.id = id;
         }
 
         public void run() {
-            String line, currentFileName = "";
-            while (true) {
-                try {
+            try {
+                System.out.println("Analyzer resolver threads active");
+                while (true) {
                     readerSemaphore.acquire();
-                    // New line available
-                    if (!currentFileName.equals(AnalyserTask.currentFileName)) {
-                        initState();
+                    for (int i = startPoint; i <= endPoint; ++i) {
+                        String filePath = filePaths.get(i);
+                        List<String> results;
+                        switch (FileService.getFileExtension(filePath)) {
+                            case ".py":
+                            case ".java":
+                            default:
+                                naiveResolverLock.acquire();
+                                results = naiveResolver.solve(filePaths, filePath);
+                                naiveResolverLock.release();
+                        }
+                        resultLock.acquire();
+                        for (String result : results) {
+                            if (!result.equals(filePath)) {
+                                graphService.addEdge(FileService.getFileNameWithExtension(result),
+                                        FileService.getFileNameWithExtension(filePath));
+                            }
+                        }
+                        resultLock.release();
                     }
-                    currentFileName = AnalyserTask.currentFileName; // Copy current file name
-                    line = AnalyserTask.line; // Copy line
                     producerSemaphore.release();
-                    processLine(line, currentFileName);
-
-                    doneProcessingLock.lock();
-                    doneProcessing[round] += 1;
-                    while (doneProcessing[round] < N) {
-                        doneProcessingConditions[round].await();
-                        doneProcessing[round] = N;
-                    }
-                    doneProcessingConditions[round].signalAll();
-                    doneProcessing[round] = 0;
-                    doneProcessingLock.unlock();
-                    round = (round + 1) % 2;
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
                 }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
-        }
-
-        private void initState() {
-            found = 0;
-            range = new ArrayList<>();
-            for (int i = startPoint; i <= endPoint; ++i) {
-                range.add(i);
-            }
-        }
-
-        private void processLine(String line, String currentFileName) throws InterruptedException {
-            ArrayList<String> temp = new ArrayList<>();
-            for (int i = found; i < range.size(); ++i) {
-                String target = FileService.getFileNameWithoutExtension(fileNames.get(range.get(i)));
-                if (line.matches(String.format(".*\\b(%s)\\b.*", target))) {
-                    temp.add(fileNames.get(range.get(i)));
-                    Collections.swap(range, found, i);
-                    found += 1;
-                }
-            }
-
-            resultLock.acquire();
-            for (String s : temp) {
-                if (!s.equals(currentFileName)) {
-                    graphService.addEdge(FileService.getFileNameWithExtension(s),
-                            FileService.getFileNameWithExtension(currentFileName));
-                }
-            }
-            resultLock.release();
         }
 
         public void setStartPoint(int startPoint) {
@@ -218,4 +176,5 @@ public class AnalyserServiceImpl implements AnalyserService {
             this.endPoint = endPoint;
         }
     }
+
 }
