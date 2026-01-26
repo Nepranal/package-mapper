@@ -25,7 +25,6 @@ import java.util.concurrent.Semaphore;
 public class AnalyserServiceImpl implements AnalyserService {
 
     private static int N;
-    ;
     private final GraphService graphService;
     private final GithubRepositoryService githubRepositoryService;
     private final ArrayList<AnalyzerTask> threads = new ArrayList<>();
@@ -74,7 +73,7 @@ public class AnalyserServiceImpl implements AnalyserService {
         }
         githubRepositoryService.checkoutCommit(repositoryName, version);
 
-        AnalyzerTask.readerSemaphore.acquire(N);
+        AnalyzerTask.producerSemaphore.acquire(N);
         graphService.setDependencyMap(new HashMap<>());
         AnalyzerTask.filePaths = FileService.getFiles(repositoryPath);
         int numberOfFiles = AnalyzerTask.filePaths.size();
@@ -86,16 +85,16 @@ public class AnalyserServiceImpl implements AnalyserService {
                     Math.min(numberOfFiles + 1, i + 1) % (numberOfFiles + 1) - 1
                     : Math.min(numberOfFiles, (i + 1) * division) - 1);
         }
-        AnalyzerTask.producerSemaphore.release(N);
+        AnalyzerTask.readerSemaphore.release(N);
 
         // Wait until all finished
-        AnalyzerTask.readerSemaphore.acquire(N);
+        AnalyzerTask.producerSemaphore.acquire(N);
         for (int i = 0; i < N; ++i) {
             AnalyzerTask t = threads.get(i);
             t.setStartPoint(0);
             t.setEndPoint(-1);
         }
-        AnalyzerTask.producerSemaphore.release(N);
+        AnalyzerTask.readerSemaphore.release(N);
 
         graphService.serializeGraph(repositoryName, version);
     }
@@ -125,12 +124,11 @@ public class AnalyserServiceImpl implements AnalyserService {
     }
 
     class AnalyzerTask extends Thread {
-        static Semaphore naiveResolverLock = new Semaphore(1);
+        private static final NaiveResolver naiveResolver = new NaiveResolver(3);
         static Semaphore resultLock = new Semaphore(1);
         static Semaphore readerSemaphore = new Semaphore(0);
         static Semaphore producerSemaphore = new Semaphore(N);
         static List<String> filePaths;
-        private static NaiveResolver naiveResolver = new NaiveResolver(3);
         private int startPoint, endPoint, id;
 
         AnalyzerTask(int id) {
@@ -139,7 +137,6 @@ public class AnalyserServiceImpl implements AnalyserService {
 
         public void run() {
             try {
-                System.out.println("Analyzer resolver threads active");
                 while (true) {
                     readerSemaphore.acquire();
                     for (int i = startPoint; i <= endPoint; ++i) {
@@ -149,9 +146,7 @@ public class AnalyserServiceImpl implements AnalyserService {
                             case ".py":
                             case ".java":
                             default:
-                                naiveResolverLock.acquire();
-                                results = naiveResolver.solve(filePaths, filePath);
-                                naiveResolverLock.release();
+                                results = naiveResolver.solve(filePaths, filePath); // This method is thread-safe
                         }
                         resultLock.acquire();
                         for (String result : results) {

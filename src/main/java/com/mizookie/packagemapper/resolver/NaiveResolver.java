@@ -26,7 +26,7 @@ public class NaiveResolver {
         }
     }
 
-    public List<String> solve(List<String> filePaths, String filePath) throws FileNotFoundException {
+    public synchronized List<String> solve(List<String> filePaths, String filePath) throws FileNotFoundException {
         // setup
         Task.filePaths = filePaths;
         Task.results = new ArrayList<>();
@@ -80,13 +80,12 @@ public class NaiveResolver {
         }
 
         public void run() {
-            System.out.println("Naive resolver threads active");
             String line, currentFileName = null;
             while (true) {
                 try {
                     readerSemaphore.acquire();
                     // New line available
-                    if (currentFileName != null && !currentFileName.equals(Task.currentFilePath)) {
+                    if (Task.currentFilePath != null && !Task.currentFilePath.equals(currentFileName)) {
                         initState();
                     }
                     currentFileName = Task.currentFilePath; // Copy current file name
@@ -124,7 +123,7 @@ public class NaiveResolver {
             ArrayList<String> temp = new ArrayList<>();
             for (int i = found; i < range.size(); ++i) {
                 String filePath = filePaths.get(range.get(i));
-                if (filePath.equals(currentFilePath)
+                if (!filePath.equals(currentFilePath)
                         && line.matches(String.format(".*\\b(%s)\\b.*", FileService.getFileNameWithoutExtension(filePath)))) {
                     temp.add(filePaths.get(range.get(i)));
                     Collections.swap(range, found, i);
