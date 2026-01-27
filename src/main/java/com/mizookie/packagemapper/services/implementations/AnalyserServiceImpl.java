@@ -151,8 +151,11 @@ public class AnalyserServiceImpl implements AnalyserService {
                         resultLock.acquire();
                         for (String result : results) {
                             if (!result.equals(filePath)) {
-                                graphService.addEdge(FileService.getFileNameWithExtension(result),
-                                        FileService.getFileNameWithExtension(filePath));
+                                graphService.addEdge(
+                                        result.replaceFirst(localRepositoryDirectory, "")
+                                                .replaceFirst("^/,*", ""),
+                                        filePath.replaceFirst(localRepositoryDirectory, "")
+                                                .replaceFirst("^/,*", ""));
                             }
                         }
                         resultLock.release();
